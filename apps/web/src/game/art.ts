@@ -67,6 +67,39 @@ const drawCurtain = (ctx: CanvasRenderingContext2D) => {
   ctx.fillRect(24, 0, 4, 64);
 };
 
+const drawWindow = (ctx: CanvasRenderingContext2D) => {
+  ctx.clearRect(0, 0, 64, 64);
+  ctx.imageSmoothingEnabled = false;
+
+  ctx.fillStyle = '#5d4a36';
+  ctx.fillRect(0, 0, 64, 64);
+
+  ctx.fillStyle = '#c7a676';
+  ctx.fillRect(2, 2, 60, 60);
+
+  ctx.fillStyle = '#bfe4ff';
+  ctx.fillRect(4, 4, 56, 26);
+  ctx.fillStyle = '#9ec8f0';
+  ctx.fillRect(4, 30, 56, 2);
+
+  ctx.fillStyle = '#6fb2d6';
+  ctx.fillRect(4, 32, 56, 18);
+  ctx.fillStyle = '#5b9ec4';
+  ctx.fillRect(4, 50, 56, 6);
+
+  ctx.fillStyle = '#6b5a49';
+  ctx.fillRect(4, 29, 56, 2);
+  ctx.fillRect(12, 28, 6, 4);
+  ctx.fillRect(46, 28, 6, 4);
+
+  ctx.fillStyle = '#f7e4a6';
+  ctx.fillRect(10, 10, 4, 4);
+
+  ctx.fillStyle = '#8a6b48';
+  ctx.fillRect(31, 2, 2, 60);
+  ctx.fillRect(2, 30, 60, 2);
+};
+
 const drawRope = (ctx: CanvasRenderingContext2D) => {
   ctx.clearRect(0, 0, 12, 64);
   ctx.fillStyle = '#9b7b4f';
@@ -150,6 +183,12 @@ export const ensureTextures = (scene: Phaser.Scene) => {
   if (curtainTexture) {
     drawCurtain(curtainTexture.getContext());
     curtainTexture.refresh();
+  }
+
+  const windowTexture = createCanvasTexture(scene, 'window', 64, 64);
+  if (windowTexture) {
+    drawWindow(windowTexture.getContext());
+    windowTexture.refresh();
   }
 
   const ropeTexture = createCanvasTexture(scene, 'rope', 12, 64);

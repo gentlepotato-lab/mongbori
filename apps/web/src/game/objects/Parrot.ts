@@ -10,8 +10,8 @@ export class Parrot {
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.sprite = scene.physics.add.sprite(x, y, 'parrot-0');
     this.sprite.setOrigin(0.5, 0.5);
-    this.sprite.setDepth(2);
-    this.sprite.setScale(1.2);
+    this.sprite.setDepth(3);
+    this.sprite.setScale(1.35);
     this.sprite.play('parrot-climb');
     this.baseY = y;
   }
@@ -23,21 +23,21 @@ export class Parrot {
     if (motion === 'climb') {
       this.sprite.play('parrot-climb', true);
       this.sprite.scene.tweens.killTweensOf(this.sprite);
-      this.sprite.setScale(1.2);
+      this.sprite.setScale(1.35);
     }
 
     if (motion === 'rest') {
       this.sprite.play('parrot-rest', true);
       this.sprite.scene.tweens.killTweensOf(this.sprite);
-      this.sprite.setScale(1.1);
+      this.sprite.setScale(1.25);
     }
 
     if (motion === 'burst') {
       this.sprite.play('parrot-burst', true);
       this.sprite.scene.tweens.add({
         targets: this.sprite,
-        scaleX: 1.35,
-        scaleY: 1.35,
+        scaleX: 1.55,
+        scaleY: 1.55,
         yoyo: true,
         duration: 120
       });

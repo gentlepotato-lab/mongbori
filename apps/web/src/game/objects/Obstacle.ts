@@ -10,8 +10,9 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.extraSpeed = Phaser.Math.Between(20, 80);
-    this.setDepth(2);
+    this.setDepth(3);
     this.setImmovable(true);
-    this.setSize(12, 12);
+    this.setScale(1.35);
+    this.setSize(14, 14, true);
   }
 }

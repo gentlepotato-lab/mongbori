@@ -13,7 +13,8 @@ export class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keys!: { left: Phaser.Input.Keyboard.Key; right: Phaser.Input.Keyboard.Key; burst: Phaser.Input.Keyboard.Key };
   private hud!: Phaser.GameObjects.Text;
-  private background!: Phaser.GameObjects.TileSprite;
+  private window!: Phaser.GameObjects.TileSprite;
+  private curtain!: Phaser.GameObjects.TileSprite;
   private rope!: Phaser.GameObjects.TileSprite;
   private startTime = 0;
   private nextSpawnAt = 0;
@@ -42,10 +43,11 @@ export class GameScene extends Phaser.Scene {
     ensureTextures(this);
 
     const { width, height } = this.scale;
-    this.background = this.add.tileSprite(0, 0, width, height, 'curtain').setOrigin(0);
-    this.rope = this.add.tileSprite(width / 2, 0, 12, height, 'rope').setOrigin(0.5, 0);
+    this.window = this.add.tileSprite(0, 0, width, height, 'window').setOrigin(0).setDepth(0);
+    this.curtain = this.add.tileSprite(0, 0, width, height, 'curtain').setOrigin(0).setDepth(1).setAlpha(0.85);
+    this.rope = this.add.tileSprite(width / 2, 0, 12, height, 'rope').setOrigin(0.5, 0).setDepth(2);
 
-    this.parrot = new Parrot(this, width / 2 + 18, height * 0.65);
+    this.parrot = new Parrot(this, width / 2 + 18, height * 0.78);
     this.parrot.sprite.setCollideWorldBounds(true);
 
     this.obstacles = this.physics.add.group({ runChildUpdate: true });
@@ -180,7 +182,8 @@ export class GameScene extends Phaser.Scene {
       this.nextSpawnAt = now + getSpawnInterval(config, elapsedSec);
     }
 
-    this.background.tilePositionY += (speed * delta) / 1000;
+    this.window.tilePositionY += (speed * delta) / 2400;
+    this.curtain.tilePositionY += (speed * delta) / 1000;
     this.rope.tilePositionY += (speed * delta) / 1000;
 
     const leftPressed = this.cursors.left?.isDown || this.keys.left.isDown || virtualInput.left;
@@ -226,9 +229,10 @@ export class GameScene extends Phaser.Scene {
     this.height = Math.floor(elapsedSec * 3);
     this.score = Math.floor(this.height * 2 + this.obstaclesAvoided * 15);
 
+    const heightCm = Math.round((this.height * 100) / 200);
     this.hud.setText(
       `난이도 ${this.options.difficulty.toUpperCase()}  생존 ${(elapsedSec).toFixed(1)}s\n` +
-      `높이 ${this.height}m  점수 ${this.score}  회피 ${this.obstaclesAvoided}`
+      `높이 ${heightCm}cm  점수 ${this.score}  회피 ${this.obstaclesAvoided}`
     );
   }
 }

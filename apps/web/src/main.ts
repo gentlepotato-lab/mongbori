@@ -134,9 +134,10 @@ const startRun = (difficulty: DifficultyKey) => {
     onGameOver: async (result: GameResult) => {
       showPanel('result');
       setResultSummary(`${difficulty.toUpperCase()} 모드 도전 종료!`);
+      const heightCm = Math.round((result.height * 100) / 200);
       setStats([
         `점수: ${result.score}`,
-        `최대 높이: ${result.height}m`,
+        `최대 높이: ${heightCm}cm`,
         `피한 장애물: ${result.obstaclesAvoided}개`,
         `플레이 타임: ${(result.durationMs / 1000).toFixed(1)}초`
       ]);
