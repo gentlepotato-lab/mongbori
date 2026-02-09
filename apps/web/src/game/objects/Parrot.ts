@@ -11,7 +11,9 @@ export class Parrot {
     this.sprite = scene.physics.add.sprite(x, y, 'parrot-0');
     this.sprite.setOrigin(0.5, 0.5);
     this.sprite.setDepth(3);
-    this.sprite.setScale(1.35);
+    this.sprite.setScale(2.0);
+    this.sprite.body.setSize(20, 20);
+    this.sprite.body.setOffset(6, 6);
     this.sprite.play('parrot-climb');
     this.baseY = y;
   }
@@ -23,21 +25,23 @@ export class Parrot {
     if (motion === 'climb') {
       this.sprite.play('parrot-climb', true);
       this.sprite.scene.tweens.killTweensOf(this.sprite);
-      this.sprite.setScale(1.35);
+      this.sprite.setScale(2.0);
+      this.sprite.setTexture('parrot-0');
     }
 
     if (motion === 'rest') {
       this.sprite.play('parrot-rest', true);
       this.sprite.scene.tweens.killTweensOf(this.sprite);
-      this.sprite.setScale(1.25);
+      this.sprite.setScale(1.85);
+      this.sprite.setTexture('parrot-0');
     }
 
     if (motion === 'burst') {
       this.sprite.play('parrot-burst', true);
       this.sprite.scene.tweens.add({
         targets: this.sprite,
-        scaleX: 1.55,
-        scaleY: 1.55,
+        scaleX: 2.2,
+        scaleY: 2.2,
         yoyo: true,
         duration: 120
       });

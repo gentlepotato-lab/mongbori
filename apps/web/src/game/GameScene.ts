@@ -2,7 +2,7 @@
 import type { GameOptions, GameResult } from './types';
 import { ensureTextures } from './art';
 import { Parrot } from './objects/Parrot';
-import { Obstacle, OBSTACLE_KEYS } from './objects/Obstacle';
+import { Obstacle, ObstacleKind } from './objects/Obstacle';
 import { DIFFICULTY_CONFIG, getSpeed, getSpawnInterval } from './systems/Difficulty';
 import { virtualInput, consumeBurst } from './virtualInput';
 
@@ -16,6 +16,9 @@ export class GameScene extends Phaser.Scene {
   private window!: Phaser.GameObjects.TileSprite;
   private curtain!: Phaser.GameObjects.TileSprite;
   private rope!: Phaser.GameObjects.TileSprite;
+  private feathers: Phaser.GameObjects.Image[] = [];
+  private lives = 3;
+  private maxLives = 5;
   private startTime = 0;
   private nextSpawnAt = 0;
   private burstUntil = 0;
@@ -26,8 +29,13 @@ export class GameScene extends Phaser.Scene {
   private height = 0;
   private score = 0;
   private obstaclesAvoided = 0;
+  private scoreBonus = 0;
   private ended = false;
   private lastMoveAt = 0;
+  private emoteUntil = 0;
+  private hitCooldownUntil = 0;
+  private emoteText!: Phaser.GameObjects.Text;
+  private emoteHideAt = 0;
   private touchActive = false;
   private touchStartX = 0;
   private touchStartTime = 0;
@@ -48,11 +56,13 @@ export class GameScene extends Phaser.Scene {
     this.rope = this.add.tileSprite(width / 2, 0, 12, height, 'rope').setOrigin(0.5, 0).setDepth(2);
 
     this.parrot = new Parrot(this, width / 2 + 18, height * 0.78);
-    this.parrot.sprite.setCollideWorldBounds(true);
+    this.parrot.sprite.setCollideWorldBounds(false);
 
     this.obstacles = this.physics.add.group({ runChildUpdate: true });
 
-    this.physics.add.overlap(this.parrot.sprite, this.obstacles, () => this.handleHit());
+    this.physics.add.overlap(this.parrot.sprite, this.obstacles, (_parrot, obstacle) => {
+      this.handleObstacleHit(obstacle as Obstacle);
+    });
 
     const keyboard = this.input.keyboard;
     if (!keyboard) {
@@ -93,9 +103,18 @@ export class GameScene extends Phaser.Scene {
 
     this.hud = this.add.text(12, 12, '', {
       fontFamily: 'Galmuri11',
-      fontSize: '22px',
+      fontSize: '16px',
       color: '#f7efe4'
     }).setDepth(5);
+
+    this.createFeathers();
+    this.setLives(this.lives);
+
+    this.emoteText = this.add.text(0, 0, '', {
+      fontFamily: 'Galmuri11',
+      fontSize: '20px',
+      color: '#f7efe4'
+    }).setDepth(6).setVisible(false);
 
     this.startTime = 0;
     this.nextSpawnAt = 0;
@@ -103,11 +122,51 @@ export class GameScene extends Phaser.Scene {
     this.hasStarted = false;
   }
 
-  private handleHit() {
+  private createFeathers() {
+    const { width } = this.scale;
+    const spacing = 18;
+    const startX = width - 12;
+    for (let i = 0; i < this.maxLives; i += 1) {
+      const icon = this.add.image(startX - i * spacing, 10, 'feather')
+        .setOrigin(1, 0)
+        .setDepth(6)
+        .setScale(1.65);
+      this.feathers.push(icon);
+    }
+  }
+
+  private setLives(value: number) {
+    this.lives = Phaser.Math.Clamp(value, 0, this.maxLives);
+    this.feathers.forEach((icon, index) => {
+      icon.setAlpha(index < this.lives ? 1 : 0.25);
+    });
+  }
+
+  private handleObstacleHit(obstacle: Obstacle) {
     if (this.ended) return;
-    if (this.time.now < this.safeUntil) return;
-    this.parrot.setMotion('slip');
-    this.finishRun();
+    if (!obstacle.active) return;
+
+    const now = this.time.now;
+    if (obstacle.kind === 'seed') {
+      obstacle.destroy();
+      this.scoreBonus += 120;
+      this.setLives(this.lives + 1);
+      this.emoteText.setText('😘').setVisible(true);
+      this.emoteHideAt = now + 380;
+      return;
+    }
+
+    if (obstacle.kind === 'dust') {
+      if (now < this.safeUntil || now < this.hitCooldownUntil) return;
+      obstacle.destroy();
+      this.hitCooldownUntil = now + 600;
+      this.setLives(this.lives - 1);
+      this.emoteText.setText('😣').setVisible(true);
+      this.emoteHideAt = now + 450;
+      if (this.lives <= 0) {
+        this.finishRun();
+      }
+    }
   }
 
   private spawnObstacle(speed: number) {
@@ -122,8 +181,9 @@ export class GameScene extends Phaser.Scene {
       attempts += 1;
     }
     const y = -20;
-    const key = Phaser.Utils.Array.GetRandom(OBSTACLE_KEYS);
-    const obstacle = new Obstacle(this, x, y, key);
+    const roll = Math.random();
+    const kind: ObstacleKind = roll < 0.08 ? 'seed' : 'dust';
+    const obstacle = new Obstacle(this, x, y, kind);
     const obstacleBody = obstacle.body as Phaser.Physics.Arcade.Body;
     obstacleBody.setVelocityY(speed + obstacle.extraSpeed);
     this.obstacles.add(obstacle);
@@ -170,7 +230,6 @@ export class GameScene extends Phaser.Scene {
     const virtualBurst = consumeBurst();
     if (Phaser.Input.Keyboard.JustDown(this.keys.burst) || this.burstQueued || virtualBurst) {
       this.burstUntil = now + 220;
-      this.parrot.setMotion('burst');
       this.burstQueued = false;
     }
 
@@ -199,21 +258,37 @@ export class GameScene extends Phaser.Scene {
     const targetVelocity = direction * (config.lateralSpeed + lateralBoost);
     body.velocity.x = Phaser.Math.Linear(body.velocity.x, targetVelocity, 0.2);
 
+    const margin = this.scale.width * 0.1;
+    this.parrot.sprite.x = Phaser.Math.Clamp(this.parrot.sprite.x, margin, this.scale.width - margin);
+    if (this.parrot.sprite.x <= margin && body.velocity.x < 0) {
+      body.velocity.x = 0;
+    }
+    if (this.parrot.sprite.x >= this.scale.width - margin && body.velocity.x > 0) {
+      body.velocity.x = 0;
+    }
+
     if (Math.abs(body.velocity.x) > 5) {
       this.lastMoveAt = now;
     }
 
-    if (!isBursting) {
-      if (Math.abs(body.velocity.x) > 5) {
-        this.parrot.setMotion('climb');
-      } else if (now - this.lastMoveAt > 900) {
-        this.parrot.setMotion('rest');
-      } else {
-        this.parrot.setMotion('climb');
-      }
+    if (isBursting) {
+      this.parrot.setMotion('burst');
+    } else if (Math.abs(body.velocity.x) > 5) {
+      this.parrot.setMotion('climb');
+    } else if (now - this.lastMoveAt > 900) {
+      this.parrot.setMotion('rest');
+    } else {
+      this.parrot.setMotion('climb');
     }
 
     this.parrot.update(time, body.velocity.x);
+    if (this.emoteText.visible) {
+      this.emoteText.setPosition(this.parrot.sprite.x + 14, this.parrot.sprite.y - 18);
+      this.emoteText.setAlpha((Math.floor(now / 120) % 2) ? 0.2 : 1);
+      if (now >= this.emoteHideAt) {
+        this.emoteText.setVisible(false);
+      }
+    }
 
     this.obstacles.children.each((child) => {
       const obstacle = child as Obstacle;
@@ -227,7 +302,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.height = Math.floor(elapsedSec * 3);
-    this.score = Math.floor(this.height * 2 + this.obstaclesAvoided * 15);
+    this.score = Math.floor(this.height * 2 + this.obstaclesAvoided * 15 + this.scoreBonus);
 
     const heightCm = Math.round((this.height * 100) / 200);
     this.hud.setText(

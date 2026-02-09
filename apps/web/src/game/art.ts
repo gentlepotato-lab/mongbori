@@ -55,6 +55,29 @@ const drawDust = (ctx: CanvasRenderingContext2D) => {
   ctx.fillRect(9, 8, 4, 4);
 };
 
+const drawSeed = (ctx: CanvasRenderingContext2D) => {
+  ctx.clearRect(0, 0, 16, 16);
+  ctx.fillStyle = '#2f2418';
+  ctx.fillRect(5, 3, 6, 10);
+  ctx.fillStyle = '#f2d36b';
+  ctx.fillRect(6, 4, 2, 8);
+  ctx.fillRect(9, 5, 1, 6);
+  ctx.fillStyle = '#7a5a2e';
+  ctx.fillRect(5, 2, 6, 1);
+  ctx.fillRect(5, 13, 6, 1);
+};
+
+const drawFeather = (ctx: CanvasRenderingContext2D) => {
+  ctx.clearRect(0, 0, 12, 12);
+  ctx.fillStyle = '#f4d35e';
+  ctx.fillRect(5, 2, 3, 7);
+  ctx.fillRect(4, 3, 1, 5);
+  ctx.fillRect(8, 3, 1, 5);
+  ctx.fillStyle = '#e9c24b';
+  ctx.fillRect(6, 1, 1, 2);
+  ctx.fillRect(6, 9, 1, 2);
+};
+
 const drawCurtain = (ctx: CanvasRenderingContext2D) => {
   ctx.clearRect(0, 0, 32, 64);
   ctx.fillStyle = '#4a3b2b';
@@ -177,6 +200,18 @@ export const ensureTextures = (scene: Phaser.Scene) => {
   if (dustTexture) {
     drawDust(dustTexture.getContext());
     dustTexture.refresh();
+  }
+
+  const seedTexture = createCanvasTexture(scene, 'obstacle-seed', 16, 16);
+  if (seedTexture) {
+    drawSeed(seedTexture.getContext());
+    seedTexture.refresh();
+  }
+
+  const featherTexture = createCanvasTexture(scene, 'feather', 12, 12);
+  if (featherTexture) {
+    drawFeather(featherTexture.getContext());
+    featherTexture.refresh();
   }
 
   const curtainTexture = createCanvasTexture(scene, 'curtain', 32, 64);
