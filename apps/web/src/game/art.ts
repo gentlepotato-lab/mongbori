@@ -1,30 +1,90 @@
 import Phaser from 'phaser';
 
-const drawParrotFrame = (ctx: CanvasRenderingContext2D, wingY: number, blink: boolean) => {
-  ctx.clearRect(0, 0, 32, 32);
+const drawParrotFrame = (
+  ctx: CanvasRenderingContext2D,
+  wingY: number,
+  blink: boolean,
+  legPhase: number,
+  flap: boolean
+) => {
+  ctx.clearRect(0, 0, 48, 48);
   ctx.imageSmoothingEnabled = false;
 
-  ctx.fillStyle = '#f4d35e';
-  ctx.fillRect(10, 12, 12, 10);
+  // Body base (deeper yellow with more shading, no pink)
+  ctx.fillStyle = '#f4d21b';
+  ctx.fillRect(13, 16, 20, 18);
+  ctx.fillStyle = '#e0b817';
+  ctx.fillRect(18, 20, 11, 10);
+  ctx.fillStyle = '#ffe866';
+  ctx.fillRect(16, 17, 8, 4);
+  ctx.fillStyle = '#f7dc44';
+  ctx.fillRect(21, 18, 7, 4);
 
-  ctx.fillStyle = '#f7e6a1';
-  ctx.fillRect(12, 7, 8, 6);
+  // Head / face (yellow, no white)
+  ctx.fillStyle = '#ffe14a';
+  ctx.fillRect(16, 8, 13, 12);
+  ctx.fillStyle = '#f4d21b';
+  ctx.fillRect(16, 12, 11, 6);
+  ctx.fillStyle = '#f7dc44';
+  ctx.fillRect(18, 10, 4, 3);
 
-  ctx.fillStyle = '#f0b429';
-  ctx.fillRect(6, wingY, 9, 6);
+  // Crown (yellow cap)
+  ctx.fillStyle = '#ffe14a';
+  ctx.fillRect(16, 7, 12, 2);
 
-  ctx.fillStyle = '#f28c28';
-  ctx.fillRect(20, 13, 4, 3);
-
-  ctx.fillStyle = '#1d1b16';
-  if (blink) {
-    ctx.fillRect(16, 10, 3, 1);
+  // Wings (more detailed)
+  ctx.fillStyle = '#f2c61f';
+  if (flap) {
+    ctx.fillRect(7, wingY - 2, 16, 11);
   } else {
-    ctx.fillRect(16, 9, 2, 2);
+    ctx.fillRect(9, wingY, 14, 10);
+  }
+  ctx.fillStyle = '#d9a716';
+  ctx.fillRect(12, wingY + 2, 7, 4);
+  ctx.fillStyle = '#fff09a';
+  ctx.fillRect(13, wingY + 1, 4, 2);
+
+  // Beak (richer orange with shading)
+  ctx.fillStyle = '#f28c28';
+  ctx.fillRect(30, 12, 8, 7);
+  ctx.fillStyle = '#c96a1e';
+  ctx.fillRect(31, 16, 5, 3);
+  ctx.fillStyle = '#ffb55a';
+  ctx.fillRect(31, 13, 2, 2);
+
+  // Feet / legs (darker peach/orange)
+  const legShift = legPhase === 0 ? 0 : 1;
+  ctx.fillStyle = '#cc8256';
+  ctx.fillRect(16, 31 + legShift, 3, 6);
+  ctx.fillRect(24, 30 + (1 - legShift), 3, 6);
+  ctx.fillStyle = '#a8673f';
+  ctx.fillRect(15, 37 + legShift, 5, 2);
+  ctx.fillRect(24, 36 + (1 - legShift), 5, 2);
+
+  // Tail (slightly longer)
+  ctx.fillStyle = '#f1cf3a';
+  ctx.fillRect(12, 30, 3, 10);
+  ctx.fillStyle = '#e0b817';
+  ctx.fillRect(13, 33, 2, 6);
+
+  // Eyes (stronger blink)
+  if (blink) {
+    ctx.fillStyle = '#1d1b16';
+    ctx.fillRect(22, 14, 5, 2);
+    ctx.fillStyle = '#2a241c';
+    ctx.fillRect(22, 13, 5, 1);
+  } else {
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(22, 12, 3, 3);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(23, 12, 1, 1);
+    ctx.fillStyle = '#1d1b16';
+    ctx.fillRect(23, 13, 3, 3);
   }
 
-  ctx.fillStyle = '#d98b2b';
-  ctx.fillRect(12, 21, 6, 3);
+  // Chest highlight (yellow only)
+  ctx.fillStyle = '#ffe86a';
+  ctx.fillRect(17, 19, 4, 3);
 };
 
 const drawBee = (ctx: CanvasRenderingContext2D) => {
@@ -49,22 +109,40 @@ const drawPin = (ctx: CanvasRenderingContext2D) => {
 
 const drawDust = (ctx: CanvasRenderingContext2D) => {
   ctx.clearRect(0, 0, 16, 16);
-  ctx.fillStyle = '#c0b5a9';
-  ctx.fillRect(5, 5, 6, 6);
-  ctx.fillRect(3, 7, 4, 4);
-  ctx.fillRect(9, 8, 4, 4);
+  ctx.fillStyle = '#d7cec4';
+  ctx.fillRect(4, 5, 6, 5);
+  ctx.fillRect(3, 8, 3, 3);
+  ctx.fillRect(9, 8, 3, 3);
+  ctx.fillStyle = '#bfb3a6';
+  ctx.fillRect(6, 4, 4, 2);
+  ctx.fillRect(5, 11, 6, 2);
+  ctx.fillStyle = '#a99b8f';
+  ctx.fillRect(6, 6, 2, 2);
 };
 
 const drawSeed = (ctx: CanvasRenderingContext2D) => {
   ctx.clearRect(0, 0, 16, 16);
-  ctx.fillStyle = '#2f2418';
-  ctx.fillRect(5, 3, 6, 10);
-  ctx.fillStyle = '#f2d36b';
-  ctx.fillRect(6, 4, 2, 8);
-  ctx.fillRect(9, 5, 1, 6);
-  ctx.fillStyle = '#7a5a2e';
-  ctx.fillRect(5, 2, 6, 1);
-  ctx.fillRect(5, 13, 6, 1);
+  // Sunflower seed (clearer silhouette + stripes)
+  ctx.fillStyle = '#1a1612';
+  ctx.fillRect(6, 2, 4, 1);
+  ctx.fillRect(5, 3, 6, 1);
+  ctx.fillRect(4, 4, 8, 1);
+  ctx.fillRect(3, 5, 10, 6);
+  ctx.fillRect(4, 11, 8, 1);
+  ctx.fillRect(5, 12, 6, 1);
+  ctx.fillRect(6, 13, 4, 1);
+
+  ctx.fillStyle = '#2f2a26';
+  ctx.fillRect(5, 4, 6, 7);
+  ctx.fillRect(4, 6, 8, 4);
+
+  ctx.fillStyle = '#f2e7c8';
+  ctx.fillRect(6, 4, 1, 8);
+  ctx.fillRect(8, 5, 1, 6);
+  ctx.fillRect(10, 4, 1, 8);
+  ctx.fillStyle = '#d2b07e';
+  ctx.fillRect(4, 5, 1, 6);
+  ctx.fillRect(11, 5, 1, 6);
 };
 
 const drawFeather = (ctx: CanvasRenderingContext2D) => {
@@ -90,39 +168,6 @@ const drawCurtain = (ctx: CanvasRenderingContext2D) => {
   ctx.fillRect(24, 0, 4, 64);
 };
 
-const drawWindow = (ctx: CanvasRenderingContext2D) => {
-  ctx.clearRect(0, 0, 64, 64);
-  ctx.imageSmoothingEnabled = false;
-
-  ctx.fillStyle = '#5d4a36';
-  ctx.fillRect(0, 0, 64, 64);
-
-  ctx.fillStyle = '#c7a676';
-  ctx.fillRect(2, 2, 60, 60);
-
-  ctx.fillStyle = '#bfe4ff';
-  ctx.fillRect(4, 4, 56, 26);
-  ctx.fillStyle = '#9ec8f0';
-  ctx.fillRect(4, 30, 56, 2);
-
-  ctx.fillStyle = '#6fb2d6';
-  ctx.fillRect(4, 32, 56, 18);
-  ctx.fillStyle = '#5b9ec4';
-  ctx.fillRect(4, 50, 56, 6);
-
-  ctx.fillStyle = '#6b5a49';
-  ctx.fillRect(4, 29, 56, 2);
-  ctx.fillRect(12, 28, 6, 4);
-  ctx.fillRect(46, 28, 6, 4);
-
-  ctx.fillStyle = '#f7e4a6';
-  ctx.fillRect(10, 10, 4, 4);
-
-  ctx.fillStyle = '#8a6b48';
-  ctx.fillRect(31, 2, 2, 60);
-  ctx.fillRect(2, 30, 60, 2);
-};
-
 const drawRope = (ctx: CanvasRenderingContext2D) => {
   ctx.clearRect(0, 0, 12, 64);
   ctx.fillStyle = '#9b7b4f';
@@ -130,6 +175,19 @@ const drawRope = (ctx: CanvasRenderingContext2D) => {
   ctx.fillStyle = '#7e6441';
   ctx.fillRect(2, 0, 2, 64);
   ctx.fillRect(8, 0, 2, 64);
+};
+
+const drawCord = (ctx: CanvasRenderingContext2D) => {
+  ctx.clearRect(0, 0, 8, 64);
+  ctx.imageSmoothingEnabled = false;
+  for (let y = 0; y < 64; y += 6) {
+    ctx.fillStyle = '#d8b684';
+    ctx.fillRect(3, y, 2, 4);
+    ctx.fillStyle = '#b88b5c';
+    ctx.fillRect(3, y + 3, 2, 1);
+    ctx.fillStyle = '#f1d2a2';
+    ctx.fillRect(2, y + 1, 1, 2);
+  }
 };
 
 const createCanvasTexture = (scene: Phaser.Scene, key: string, width: number, height: number) => {
@@ -141,12 +199,14 @@ const createCanvasTexture = (scene: Phaser.Scene, key: string, width: number, he
 export const ensureTextures = (scene: Phaser.Scene) => {
   if (scene.textures.exists('parrot-0')) return;
 
-  const wingPositions = [14, 12, 10, 12];
+  const wingPositions = [20, 18, 15, 18];
+  const legPhases = [0, 1, 0, 1];
+  const flapFrames = [false, true, true, false];
   wingPositions.forEach((wingY, index) => {
-    const texture = createCanvasTexture(scene, `parrot-${index}`, 32, 32);
+    const texture = createCanvasTexture(scene, `parrot-${index}`, 48, 48);
     if (!texture) return;
     const ctx = texture.getContext();
-    drawParrotFrame(ctx, wingY, index === 3);
+    drawParrotFrame(ctx, wingY, index === 3, legPhases[index], flapFrames[index]);
     texture.refresh();
   });
 
@@ -182,6 +242,16 @@ export const ensureTextures = (scene: Phaser.Scene) => {
     ],
     frameRate: 12,
     repeat: -1
+  });
+
+  scene.anims.create({
+    key: 'parrot-blink',
+    frames: [
+      { key: 'parrot-3' },
+      { key: 'parrot-0' }
+    ],
+    frameRate: 10,
+    repeat: 0
   });
 
   const beeTexture = createCanvasTexture(scene, 'obstacle-bee', 16, 16);
@@ -220,15 +290,15 @@ export const ensureTextures = (scene: Phaser.Scene) => {
     curtainTexture.refresh();
   }
 
-  const windowTexture = createCanvasTexture(scene, 'window', 64, 64);
-  if (windowTexture) {
-    drawWindow(windowTexture.getContext());
-    windowTexture.refresh();
-  }
-
   const ropeTexture = createCanvasTexture(scene, 'rope', 12, 64);
   if (ropeTexture) {
     drawRope(ropeTexture.getContext());
     ropeTexture.refresh();
+  }
+
+  const cordTexture = createCanvasTexture(scene, 'cord', 8, 64);
+  if (cordTexture) {
+    drawCord(cordTexture.getContext());
+    cordTexture.refresh();
   }
 };

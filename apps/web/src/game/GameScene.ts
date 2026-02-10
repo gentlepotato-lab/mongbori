@@ -13,9 +13,12 @@ export class GameScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private keys!: { left: Phaser.Input.Keyboard.Key; right: Phaser.Input.Keyboard.Key; burst: Phaser.Input.Keyboard.Key };
   private hud!: Phaser.GameObjects.Text;
-  private window!: Phaser.GameObjects.TileSprite;
+  private window!: Phaser.GameObjects.Image;
   private curtain!: Phaser.GameObjects.TileSprite;
   private rope!: Phaser.GameObjects.TileSprite;
+  private cords: Phaser.GameObjects.TileSprite[] = [];
+  private cordBaseX: number[] = [];
+  private cordSway: number[] = [];
   private feathers: Phaser.GameObjects.Image[] = [];
   private lives = 3;
   private maxLives = 5;
@@ -47,13 +50,31 @@ export class GameScene extends Phaser.Scene {
     this.options = options;
   }
 
+  preload() {
+    if (this.textures.exists('hanriver-bg')) {
+      this.textures.remove('hanriver-bg');
+    }
+    this.load.image('hanriver-bg', `/hanriver_bg.png?v=${Date.now()}`);
+  }
+
   create() {
     ensureTextures(this);
 
     const { width, height } = this.scale;
-    this.window = this.add.tileSprite(0, 0, width, height, 'window').setOrigin(0).setDepth(0);
-    this.curtain = this.add.tileSprite(0, 0, width, height, 'curtain').setOrigin(0).setDepth(1).setAlpha(0.85);
+    this.window = this.add.image(width / 2, height / 2, 'hanriver-bg').setOrigin(0.5).setDepth(0);
+    const bgSource = this.textures.get('hanriver-bg').getSourceImage() as HTMLImageElement;
+    const bgScale = Math.max(width / bgSource.width, height / bgSource.height);
+    this.window.setScale(bgScale);
+    this.curtain = this.add.tileSprite(0, 0, width, height, 'curtain').setOrigin(0).setDepth(1).setAlpha(0.35);
     this.rope = this.add.tileSprite(width / 2, 0, 12, height, 'rope').setOrigin(0.5, 0).setDepth(2);
+
+    const cordXs = [width * 0.25, width * 0.5, width * 0.75];
+    cordXs.forEach((x) => {
+      const cord = this.add.tileSprite(x, 0, 8, height, 'cord').setOrigin(0.5, 0).setDepth(2);
+      this.cords.push(cord);
+      this.cordBaseX.push(x);
+      this.cordSway.push(0);
+    });
 
     this.parrot = new Parrot(this, width / 2 + 18, height * 0.78);
     this.parrot.sprite.setCollideWorldBounds(false);
@@ -169,7 +190,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private spawnObstacle(speed: number) {
+  private spawnObstacle(speed: number, elapsedSec: number, config: (typeof DIFFICULTY_CONFIG)[keyof typeof DIFFICULTY_CONFIG]) {
     const { width } = this.scale;
     const margin = 40;
     const safeRadius = 60;
@@ -181,8 +202,10 @@ export class GameScene extends Phaser.Scene {
       attempts += 1;
     }
     const y = -20;
+    const timeTier = Math.floor(elapsedSec / 20);
+    const seedChance = Math.max(0.05, config.seedChance - timeTier * 0.01);
     const roll = Math.random();
-    const kind: ObstacleKind = roll < 0.08 ? 'seed' : 'dust';
+    const kind: ObstacleKind = roll < seedChance ? 'seed' : 'dust';
     const obstacle = new Obstacle(this, x, y, kind);
     const obstacleBody = obstacle.body as Phaser.Physics.Arcade.Body;
     obstacleBody.setVelocityY(speed + obstacle.extraSpeed);
@@ -237,13 +260,17 @@ export class GameScene extends Phaser.Scene {
     const speed = getSpeed(config, elapsedSec, 0);
 
     if (now >= this.nextSpawnAt) {
-      this.spawnObstacle(speed);
-      this.nextSpawnAt = now + getSpawnInterval(config, elapsedSec);
+      this.spawnObstacle(speed, elapsedSec, config);
+      const timeTier = Math.floor(elapsedSec / 20);
+      const interval = Math.max(config.minSpawnMs, getSpawnInterval(config, elapsedSec) - timeTier * 40);
+      this.nextSpawnAt = now + interval;
     }
 
-    this.window.tilePositionY += (speed * delta) / 2400;
-    this.curtain.tilePositionY += (speed * delta) / 1000;
-    this.rope.tilePositionY += (speed * delta) / 1000;
+    this.curtain.tilePositionY -= (speed * delta) / 1300;
+    this.rope.tilePositionY -= (speed * delta) / 3200;
+    this.cords.forEach((cord) => {
+      cord.tilePositionY -= (speed * delta) / 3200;
+    });
 
     const leftPressed = this.cursors.left?.isDown || this.keys.left.isDown || virtualInput.left;
     const rightPressed = this.cursors.right?.isDown || this.keys.right.isDown || virtualInput.right;
@@ -282,6 +309,18 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.parrot.update(time, body.velocity.x);
+
+    const parrotX = this.parrot.sprite.x;
+    this.cords.forEach((cord, index) => {
+      const baseX = this.cordBaseX[index];
+      const dx = Math.abs(parrotX - baseX);
+      if (dx < 10) {
+        this.cordSway[index] = Math.min(1, this.cordSway[index] + 0.25);
+      }
+      this.cordSway[index] *= 0.93;
+      const sway = Math.sin(time * 0.02 + index) * 2.2 * this.cordSway[index];
+      cord.x = baseX + sway;
+    });
     if (this.emoteText.visible) {
       this.emoteText.setPosition(this.parrot.sprite.x + 14, this.parrot.sprite.y - 18);
       this.emoteText.setAlpha((Math.floor(now / 120) % 2) ? 0.2 : 1);
