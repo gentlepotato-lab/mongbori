@@ -26,6 +26,7 @@ export class GameScene extends Phaser.Scene {
   private nextSpawnAt = 0;
   private burstUntil = 0;
   private burstQueued = false;
+  private spawnIndex = 0;
   private gameDurationMs = Number.POSITIVE_INFINITY;
   private safeUntil = 0;
   private hasStarted = false;
@@ -139,6 +140,7 @@ export class GameScene extends Phaser.Scene {
 
     this.startTime = 0;
     this.nextSpawnAt = 0;
+    this.spawnIndex = 0;
     this.safeUntil = 0;
     this.hasStarted = false;
   }
@@ -195,20 +197,28 @@ export class GameScene extends Phaser.Scene {
     const margin = 40;
     const safeRadius = 60;
     const parrotX = this.parrot.sprite.x;
-    let x = Phaser.Math.Between(margin, width - margin);
+    const span = width - margin * 2;
+    const bins = 6;
+    const binWidth = span / bins;
+    let x = margin + binWidth * (this.spawnIndex % bins) + Phaser.Math.Between(0, Math.max(1, Math.floor(binWidth - 1)));
+    this.spawnIndex += 1;
     let attempts = 0;
     while (Math.abs(x - parrotX) < safeRadius && attempts < 6) {
-      x = Phaser.Math.Between(margin, width - margin);
+      const offset = ((this.spawnIndex + attempts) % bins) * binWidth;
+      x = margin + offset + Phaser.Math.Between(0, Math.max(1, Math.floor(binWidth - 1)));
       attempts += 1;
+    }
+    if (Math.abs(x - parrotX) < safeRadius) {
+      x = Phaser.Math.Between(margin, width - margin);
     }
     const y = -20;
     const timeTier = Math.floor(elapsedSec / 20);
-    const seedChance = Math.max(0.05, config.seedChance - timeTier * 0.01);
+    const seedChance = Math.max(0.05, config.seedChance + 0.02 - timeTier * 0.01);
     const roll = Math.random();
     const kind: ObstacleKind = roll < seedChance ? 'seed' : 'dust';
     const obstacle = new Obstacle(this, x, y, kind);
     const obstacleBody = obstacle.body as Phaser.Physics.Arcade.Body;
-    obstacleBody.setVelocityY(speed + obstacle.extraSpeed);
+    obstacleBody.setVelocityY((speed + obstacle.extraSpeed) * obstacle.speedScale);
     this.obstacles.add(obstacle);
   }
 
@@ -332,7 +342,7 @@ export class GameScene extends Phaser.Scene {
     this.obstacles.children.each((child) => {
       const obstacle = child as Obstacle;
       const obstacleBody = obstacle.body as Phaser.Physics.Arcade.Body;
-      obstacleBody.velocity.y = speed + obstacle.extraSpeed;
+      obstacleBody.velocity.y = (speed + obstacle.extraSpeed) * obstacle.speedScale;
       if (obstacle.y > this.scale.height + 30) {
         obstacle.destroy();
         this.obstaclesAvoided += 1;

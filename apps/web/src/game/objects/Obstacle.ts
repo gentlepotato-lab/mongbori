@@ -9,6 +9,7 @@ const textureByKind: Record<ObstacleKind, string> = {
 
 export class Obstacle extends Phaser.Physics.Arcade.Sprite {
   extraSpeed: number;
+  speedScale: number;
   kind: ObstacleKind;
 
   constructor(scene: Phaser.Scene, x: number, y: number, kind: ObstacleKind) {
@@ -16,9 +17,10 @@ export class Obstacle extends Phaser.Physics.Arcade.Sprite {
     this.kind = kind;
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    this.extraSpeed = Phaser.Math.Between(10, 150);
     this.setDepth(3);
     this.setImmovable(true);
+    this.extraSpeed = Phaser.Math.Between(10, 150);
+    this.speedScale = 1;
     this.setScale(1.35);
     const body = this.body as Phaser.Physics.Arcade.Body;
     body.setSize(12, 12);
